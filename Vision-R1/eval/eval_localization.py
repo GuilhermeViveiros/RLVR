@@ -152,8 +152,7 @@ def xyxy2xywh(bbox):
     y[:, 3] = (x[:, 3] - x[:, 1])
     return y.tolist()
 
-def visualization(image_path, extract_bboxes, save_path, box_pattern=0):
-    # 打开图片
+def visualization(image_path, pd_bboxes, save_path, box_pattern=0):
     if isinstance(image_path, str):
         image = Image.open(image_path)
         draw = ImageDraw.Draw(image)
@@ -163,21 +162,19 @@ def visualization(image_path, extract_bboxes, save_path, box_pattern=0):
     height = image.height
     width = image.width
 
-    # 提取线宽和字体大小
-    line_width = int(width * 0.005) if width * 0.005 > 2 else 2  # 确保线宽至少为2像素
-    font_size = int(height * 0.025) if height * 0.025 > 15 else 15  # 确保字体大小至少为15像素
+    line_width = int(width * 0.005) if width * 0.005 > 2 else 2
+    font_size = int(height * 0.025) if height * 0.025 > 15 else 15
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
 
-    # 提取框和需要标注的类别
-    if isinstance(extract_bboxes[0], dict):
-        bboxes = [ex["bbox"] for ex in extract_bboxes]
-        classes = [ex["category_name"] for ex in extract_bboxes]
+    if isinstance(pd_bboxes[0], dict):
+        bboxes = [ex["pd_bbox"] for ex in pd_bboxes]
+        classes = [ex["label"] for ex in pd_bboxes]
         bboxes = np.asarray(bboxes)
         bboxes[:, ::2] *= width
         bboxes[:, 1::2] *= height
         bboxes = bboxes.tolist()
     else:
-        bboxes = extract_bboxes[0]
+        bboxes = pd_bboxes[0]
         bboxes = np.asarray(bboxes)
         bboxes[:, ::2] *= width
         bboxes[:, 1::2] *= height
@@ -442,7 +439,7 @@ def dynamic_preprocess(image, min_num=1, max_num=12, image_size=448, use_thumbna
     return processed_images
 
 class EVALDataset(Dataset):
-    def __init__(self, data_path: str, prompt: str, image_folder: str):
+    def __init__(self, data_path: str, prompt: str, image_folder: str, debug: bool = False):
         super(EVALDataset, self).__init__()
         f = open(data_path, "r", encoding="utf-8")
         whole_annotations = json.load(f)
@@ -460,9 +457,11 @@ class EVALDataset(Dataset):
             self.prompt = "Can you point out {} in the image and provide the coordinates of its location?".format(list(catid2name.values())[0].split("-")[-1])
         # self.prompt = prompt
         self.image_folder = image_folder
-        
+        self.debug = debug
 
     def __len__(self):
+        if self.debug:
+            return 1
         return len(self.list_data_dict)
 
     def get_item(self, index):
@@ -796,8 +795,12 @@ if __name__ == "__main__":
     parser.add_argument("--single", action="store_true", help="Set for ODINW Evaluation with visual grounding setting")
     parser.add_argument("--pos", action="store_true", help="Set for ODINW Evaluation with postive categories following the Qwen2.5VL Setting")
     parser.add_argument("--max-new-tokens", default=1024, type=int, help="Max new tokens to be generated")
+    parser.add_argument("--debug", type=bool, default=False, help="Set for debug mode")
     args = parser.parse_args()
 
+    # Args
+    print(args)
+    
     # Env Init
     torch.distributed.init_process_group(
         backend='nccl',
@@ -809,7 +812,6 @@ if __name__ == "__main__":
     torch.cuda.set_device(int(os.getenv('LOCAL_RANK', 0)))
 
     #Load Model & Model init
-
     model_path = args.model_path
     conv_mode = "llava_llama_2"
     #args.model_path = model_path
@@ -849,7 +851,7 @@ if __name__ == "__main__":
             prompt = DEFAULT_IMAGE_TOKEN + '\n' + prompt
     
     model_out_dir = os.path.join(args.output_path, args.model_path.split("/")[-1])
-    #import pdb; pdb.set_trace()
+    
     os.makedirs(model_out_dir, exist_ok=True)
 
     datasets = {ds:DATASET_MAP[ds] for ds in args.dataset.split(",")}
@@ -869,13 +871,13 @@ if __name__ == "__main__":
             else:
                 dataset = SINGLEEVALDataset(dataset_path, prompt, image_folder)
         else:
-            dataset = EVALDataset(dataset_path, prompt, image_folder)
+            dataset = EVALDataset(dataset_path, prompt, image_folder, debug=args.debug)
         auto_rank0_print("{} input prompt is {}".format(ds, dataset.prompt))
 
         conv = conv_templates[conv_mode].copy()
         stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
         keywords = [stop_str]
-        #import pdb; pdb.set_trace()
+        import pdb; pdb.set_trace()
         if args.model_type == 'qwen':
             dataloader = torch.utils.data.DataLoader(
                 dataset=dataset,
@@ -924,10 +926,16 @@ if __name__ == "__main__":
             with torch.inference_mode():
                 if args.model_type == 'qwen':
                     for i, (inputs, infos) in tqdm(enumerate(dataloader)):
-                        # import pdb; pdb.set_trace()
+                        import pdb; pdb.set_trace()
                         assert args.batch_size == 1
                         inputs = inputs.to(model.device)
-                        generated_ids = model.generate(**inputs, use_cache=True, do_sample=False, max_new_tokens=512)
+                        generated_ids = model.generate(
+                            **inputs,
+                            use_cache=True,
+                            do_sample=False,
+                            max_new_tokens=512
+                        )
+                        
                         generated_ids_trimmed = [
                             out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
                         ]
@@ -1059,6 +1067,7 @@ if __name__ == "__main__":
                 merged_outputs = [None for _ in range(world_size)]
                 torch.distributed.all_gather_object(merged_outputs, eval_outputs)
                 merged_outputs = [_ for _ in itertools.chain.from_iterable(merged_outputs)]
+                
                 if torch.distributed.get_rank() == 0:
                     torch.save(merged_outputs, os.path.join(model_data_out_dir,"original_pred.pth"))
                     print(f"Begin to eval {ds}")
@@ -1078,7 +1087,7 @@ if __name__ == "__main__":
                                     truncated_text = extracted[:end_idx] + "]"                                               
                                     extracted = ast.literal_eval(truncated_text)
                                 for idx, item in enumerate(extracted):
-                                    #import pdb; pdb.set_trace()
+                                    import pdb; pdb.set_trace()
                                     try:
                                         predict_bbox = torch.tensor(xyxy2xywh(item["bbox_2d"]), dtype=torch.float32).view(-1, 4)
                                         predict_bbox[:, ::2] = predict_bbox[:, ::2] / output["input_width"] * output["width"]
@@ -1088,8 +1097,9 @@ if __name__ == "__main__":
                                         ret = {
                                             "image_id": output["image_id"],
                                             "category_id": predict_id,
-                                            "bbox": predict_bbox.tolist()[0],
-                                            "score": 0.99,
+                                            "pd_bbox": predict_bbox.tolist()[0],
+                                            "gt_bbox": item["bbox_2d"],
+                                            "score": iou_score(predict_bbox, item["bbox_2d"]),
                                         }
                                         eval_list.append(ret)
                                     except:
@@ -1288,7 +1298,7 @@ if __name__ == "__main__":
                             truncated_text = extracted[:end_idx] + "]"                                               
                             extracted = ast.literal_eval(truncated_text)
                         for idx, item in enumerate(extracted):
-                            #import pdb; pdb.set_trace()
+                            import pdb; pdb.set_trace()
                             try:
                                 predict_bbox = torch.tensor(xyxy2xywh(item["bbox_2d"]), dtype=torch.float32).view(-1, 4)
                                 predict_bbox[:, ::2] = predict_bbox[:, ::2] / output["input_width"] * output["width"]
@@ -1298,7 +1308,8 @@ if __name__ == "__main__":
                                 ret = {
                                     "image_id": output["image_id"],
                                     "category_id": predict_id,
-                                    "bbox": predict_bbox.tolist()[0],
+                                    "pd_bbox": predict_bbox.tolist()[0],
+                                    "gt_bbox": item["bbox_2d"],
                                     "score": 0.99,
                                 }
                                 eval_list.append(ret)

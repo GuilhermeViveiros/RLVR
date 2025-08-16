@@ -34,6 +34,7 @@ torchrun --nproc_per_node 1 \
         --init tcp://127.0.0.1:12355 \
         --query "Examine the image for any objects from the category set. Report the coordinates of each detected object. The category set includes <category set>." \
         --batch-size 1 \
-        --dataset ${1} 
+        --dataset ${1} \
+        --debug True
         # --single \
         # --pos \
