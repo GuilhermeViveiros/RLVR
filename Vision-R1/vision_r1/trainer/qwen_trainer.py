@@ -4,6 +4,7 @@ from collections import defaultdict
 from typing import Any, Callable, Optional, Union
 
 import torch
+import torch.distributed as dist
 import torch.utils.data
 import transformers
 from datasets import Dataset, IterableDataset
@@ -42,6 +43,7 @@ if is_peft_available():
 
 if is_wandb_available():
     import wandb
+    wandb.init(project="vision-rlvr")
 
 # What we call a reward function is a callable that takes a list of prompts and completions and returns a list of
 # rewards. When it's a string, it's a model ID, so it's loaded as a pretrained model.
@@ -150,6 +152,7 @@ class Qwen25VLGRPOTrainer(Trainer):
         torch_dtype: str = None,
         epsilon: float = 0.0,
     ):
+        
         # Args
         if args is None:
             model_name = model if isinstance(model, str) else model.config._name_or_path
@@ -161,6 +164,7 @@ class Qwen25VLGRPOTrainer(Trainer):
         # Trained model
         model_init_kwargs = args.model_init_kwargs or {}
         model_init_kwargs["attn_implementation"] = attn_implementation
+        
         if isinstance(model, str):
             model_id = model
             torch_dtype = torch_dtype if torch_dtype else model_init_kwargs.get("torch_dtype")
@@ -174,10 +178,18 @@ class Qwen25VLGRPOTrainer(Trainer):
                     "Invalid `torch_dtype` passed to `GRPOConfig`. Expected either 'auto' or a string representing "
                     f"a `torch.dtype` (e.g., 'float32'), but got {torch_dtype}."
                 )
+            
+            # if dist.is_initialized() and dist.get_rank() == 0:
+            #     import rpdb
+            #     rpdb.set_trace()
+
             # Disable caching if gradient checkpointing is enabled (not supported)
             model_init_kwargs["use_cache"] = (
                 False if args.gradient_checkpointing else model_init_kwargs.get("use_cache")
             )
+
+        
+            
             if "Qwen2-VL" in model_id:
                 model = Qwen2VLForConditionalGeneration.from_pretrained(model, **model_init_kwargs)
             elif "Qwen2.5-VL" in model_id:
@@ -353,6 +365,10 @@ class Qwen25VLGRPOTrainer(Trainer):
     
         mini_batch_size = self.args.logit_computation_mini_batch_size if hasattr(self.args, 'logit_computation_mini_batch_size') else 1 # need newest trl
 
+        
+        # DEBUG: [Change every prompt to ["Describe the image in detail"] to test the model]
+        # for item in inputs:
+        #     item["prompt"] = [{"content": [{"type": "image", "text": None}, {"type": "text", "text": "Describe the image"}], "role": "user"}]
         prompts = [x["prompt"] for x in inputs]
         prompts_text = [maybe_apply_chat_template(example, self.processing_class)["prompt"] for example in inputs]
         images = [x["image"] for x in inputs]
@@ -366,6 +382,22 @@ class Qwen25VLGRPOTrainer(Trainer):
         )
         prompt_inputs = super()._prepare_inputs(prompt_inputs)
 
+        # decode the input text
+        def decode_text(input_ids):
+            return self.processing_class.batch_decode(input_ids, skip_special_tokens=True)
+        
+        decode_text(prompt_inputs["input_ids"])
+        
+        # prompts_text = self.processing_class.batch_decode(prompt_inputs["input_ids"][1], skip_special_tokens=True)
+        # if is_conversational(inputs[0]):
+        #     prompts_text = [[{"role": "assistant", "content": prompt}] for prompt in prompts_text]
+        # prompts_text = [apply_chat_template(x, self.processing_class)["prompt"] for x in prompts_text]
+        
+
+        # if not dist.is_initialized() or dist.get_rank() == 0:
+        #         import rpdb
+        #         rpdb.set_trace()
+
         prompt_ids, prompt_mask = prompt_inputs["input_ids"], prompt_inputs["attention_mask"]
         pixel_values = prompt_inputs["pixel_values"]
         image_grid_thw = prompt_inputs["image_grid_thw"]
@@ -377,10 +409,15 @@ class Qwen25VLGRPOTrainer(Trainer):
             prompt_inputs["input_ids"] = prompt_inputs["input_ids"][:, -self.max_prompt_length :]
             prompt_inputs["attention_mask"] = prompt_inputs["attention_mask"][:, -self.max_prompt_length :]
 
+
         # Generate completions
         with unwrap_model_for_generation(model, self.accelerator) as unwrapped_model:
             torch.cuda.empty_cache()
+
             prompt_completion_ids = unwrapped_model.generate(**prompt_inputs, generation_config=self.generation_config)
+            # if dist.is_initialized() and dist.get_rank() == 0:
+            #     import rpdb
+            #     rpdb.set_trace()
 
             prompt_length = prompt_ids.size(1)
             prompt_ids = prompt_completion_ids[:, :prompt_length]

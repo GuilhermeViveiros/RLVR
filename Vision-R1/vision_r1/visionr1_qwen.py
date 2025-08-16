@@ -25,7 +25,7 @@ from trl import GRPOConfig, GRPOTrainer, ModelConfig, ScriptArguments, TrlParser
 from griffon.constants import DEFAULT_IMAGE_TOKEN
 from griffon.coor_utils import generalized_box_iou, accum_probs, box_iou
 
-
+import torch.distributed as dist
 
 def parse_json(json_output):
     """
@@ -126,6 +126,7 @@ class GRPOScriptArguments(ScriptArguments):
     )
     eval_match: Optional[bool] = field(default=False)
     adaptive: Optional[bool] = field(default=False)
+    debug_mode: Optional[bool] = field(default=False)
 
 
 def BoxPriorMatcher(outputs, targets):
@@ -194,6 +195,14 @@ def modify_list(lst, minimal=0.5, maximum=0.75):
     """
     return [0 if x < minimal else 1 if x > maximum else x for x in lst]
     
+def modify_tensor(tensor, minimal=0.5, maximum=0.75):
+    tensor = tensor.float()
+    
+    tensor[tensor < minimal] = 0
+    
+    tensor[tensor > maximum] = 1
+    
+    return tensor
 
 def dual_format_reward(completions, num_instances, **kwargs):
     def validate_bbox_label(text):
@@ -228,15 +237,6 @@ def dual_format_reward(completions, num_instances, **kwargs):
             rewards.append(1.0 - reward)
 
     return rewards
-
-def modify_tensor(tensor, minimal=0.5, maximum=0.75):
-    tensor = tensor.float()
-    
-    tensor[tensor < minimal] = 0
-    
-    tensor[tensor > maximum] = 1
-    
-    return tensor
 
 def recall_reward(completions, solution, width, height, num_instances, step, input_widths, input_heights, **kwargs):
     """
@@ -411,6 +411,9 @@ reward_funcs_registry = {
 
 
 def main(script_args, training_args, model_args):
+    # Debug mode enabled?
+    debug_mode = script_args.debug_mode
+
     # Get reward functions
     reward_funcs = [reward_funcs_registry[func] for func in script_args.reward_funcs]
 
@@ -419,6 +422,8 @@ def main(script_args, training_args, model_args):
         dataset = load_dataset(script_args.dataset_name, name=script_args.dataset_config)
     except:
         dataset = load_from_disk(script_args.dataset_name)
+    
+
 
     def make_conversation_image(example, qwen_enable):
         # change the prompt to qwen mode
@@ -458,9 +463,10 @@ def main(script_args, training_args, model_args):
         dataset = dataset.filter(filter_has_instance)
     else:
         dataset = dataset.filter(partial(filter_has_instance,minimal=10))
+
     dataset = dataset.sort("num_instances")
 
-    if "image" in dataset.features:
+    if "image" in dataset[script_args.dataset_train_split].features:
         print("has image in dataset")
         dataset = dataset.map(make_conversation_image)  # Utilize multiprocessing for faster mapping
 
@@ -470,13 +476,12 @@ def main(script_args, training_args, model_args):
     
     trainer_cls = Qwen25VLGRPOTrainer
 
-
     # Initialize the GRPO trainer
     trainer = trainer_cls(
         model=model_args.model_name_or_path,
         reward_funcs=reward_funcs,
         args=training_args,
-        train_dataset=dataset,
+        train_dataset=dataset["train"],
         eval_dataset=dataset if training_args.eval_strategy != "no" else None,
         peft_config=get_peft_config(model_args),
         attn_implementation=model_args.attn_implementation,
@@ -486,16 +491,38 @@ def main(script_args, training_args, model_args):
         torch_dtype=model_args.torch_dtype
     )
 
-    # Train and push the model to the Hub
+    # Train the model
     trainer.train()
 
-    # Save and push to hub
+    # Save the model
     trainer.save_model(training_args.output_dir)
-    if training_args.push_to_hub:
-        trainer.push_to_hub(dataset_name=script_args.dataset_name)
+
+    # Push the model to the Hub
+    # if training_args.push_to_hub:
+    #     trainer.push_to_hub(dataset_name=script_args.dataset_name)
 
 
 if __name__ == "__main__":
     parser = TrlParser((GRPOScriptArguments, GRPOConfig, ModelConfig))
     script_args, training_args, model_args = parser.parse_args_and_config()
+    # improve TrainingArguments dataset iter
+    #training_args.dataloader_num_workers = 30 #os.cpu_count()
+    #training_args.dataloader_pin_memory = True
+    #training_args.dataloader_prefetch_factor = 8
+    #training_args.dataloader_persistent_workers = True
+    # continue
+    
+    if dist.is_initialized() and dist.get_rank() == 0:
+        # print all the args in a pretty way
+        print("\033[94mScript Arguments:\033[0m")
+        for key, value in script_args.__dict__.items():
+            print(f"\033[94m{key}: {value}\033[0m")
+        print("\033[92mTraining Arguments:\033[0m")
+        for key, value in training_args.__dict__.items():
+            print(f"\033[92m{key}: {value}\033[0m") 
+        print("\033[93mModel Arguments:\033[0m")
+        for key, value in model_args.__dict__.items():
+            print(f"\033[93m{key}: {value}\033[0m")
+    
+    # execute the main function
     main(script_args, training_args, model_args)

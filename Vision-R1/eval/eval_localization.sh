@@ -23,17 +23,17 @@
 # While for COCO evaluation, they should be removed to be false.
 ###############################################################################################
 
-torchrun --nproc_per_node 8 \
+torchrun --nproc_per_node 1 \
         --nnodes 1 \
         --node_rank 0 \
         --master_addr 127.0.0.1 \
         --master_port 12355 \
         eval/eval_localization.py \
-        --model-path ${1} \
-        --model-type ${2} \
+        --model-path checkpoints/Qwen2.5-VL-3B-Instruct-Vision-R1 \
+        --model-type qwen \
         --init tcp://127.0.0.1:12355 \
         --query "Examine the image for any objects from the category set. Report the coordinates of each detected object. The category set includes <category set>." \
         --batch-size 1 \
-        --dataset ${3} 
+        --dataset ${1} 
         # --single \
         # --pos \

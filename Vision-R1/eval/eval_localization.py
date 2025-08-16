@@ -38,8 +38,8 @@ from griffon.mm_utils import tokenizer_image_token, get_model_name_from_path, Ke
 from griffon.utils import auto_rank0_print
 
 #qwen
-# from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
-# from qwen_vl_utils import process_vision_info
+from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
+from qwen_vl_utils import process_vision_info
 
 #internvl
 # import torchvision.transforms as T 
@@ -127,6 +127,10 @@ IMAGE_FOLDER_MAP = {
     "vector": "dataset/odinw/data/vector/vectorCompleteDataset.v5-v5-(resize-+-grayscale-+-rotate-+-blur-+-bb-optimizations).coco/valid/",
     "spec_hand": "dataset/odinw/data/EgoHands/specific/valid"
 }
+
+# HARDCODED PATHS
+DATASET_MAP["coco2017"] = "/mnt/scratch-artemis/gviveiros/RLVR/data/coco/annotations/instances_val2017.json"
+IMAGE_FOLDER_MAP["coco2017"] = "/mnt/scratch-artemis/gviveiros/RLVR/data/coco/images/val2017"
 
 def auto_rank0_print(*args):
     if dist.is_initialized():
