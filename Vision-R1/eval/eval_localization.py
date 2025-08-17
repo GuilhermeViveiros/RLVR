@@ -6,7 +6,7 @@ import transformers
 import itertools
 import copy
 import re
-import ast
+import ast 
 
 from torch.utils.data import Dataset
 import torch.distributed as dist
@@ -25,33 +25,24 @@ from PIL import ImageColor
 import json
 import random
 import io
-import ast
+import ast 
 
 # griffon
 from griffon.coor_utils import xyxy2xywh, accum_probs, visualization, xywh2xyxy
 
 from griffon.eval.run_griffon import load_image, extract
-from griffon.constants import (
-    IMAGE_TOKEN_INDEX,
-    DEFAULT_IMAGE_TOKEN,
-    DEFAULT_IM_START_TOKEN,
-    DEFAULT_IM_END_TOKEN,
-)
+from griffon.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 from griffon.conversation import conv_templates, SeparatorStyle
 from griffon.model.builder import load_pretrained_model
-from griffon.mm_utils import (
-    tokenizer_image_token,
-    get_model_name_from_path,
-    KeywordsStoppingCriteria,
-)
+from griffon.mm_utils import tokenizer_image_token, get_model_name_from_path, KeywordsStoppingCriteria
 from griffon.utils import auto_rank0_print
 
-# qwen
+#qwen
 from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 from qwen_vl_utils import process_vision_info
 
-# internvl
-# import torchvision.transforms as T
+#internvl
+# import torchvision.transforms as T 
 # from torchvision.transforms.functional import InterpolationMode
 # from transformers import AutoModel, AutoTokenizer
 
@@ -62,88 +53,14 @@ from qwen_vl_utils import process_vision_info
 # from ferret.conversation import conv_templates, SeparatorStyle
 
 
-COCO_NAMES = [
-    "person",
-    "bicycle",
-    "car",
-    "motorcycle",
-    "airplane",
-    "bus",
-    "train",
-    "truck",
-    "boat",
-    "traffic light",
-    "fire hydrant",
-    "stop sign",
-    "parking meter",
-    "bench",
-    "bird",
-    "cat",
-    "dog",
-    "horse",
-    "sheep",
-    "cow",
-    "elephant",
-    "bear",
-    "zebra",
-    "giraffe",
-    "backpack",
-    "umbrella",
-    "handbag",
-    "tie",
-    "suitcase",
-    "frisbee",
-    "skis",
-    "snowboard",
-    "sports ball",
-    "kite",
-    "baseball bat",
-    "baseball glove",
-    "skateboard",
-    "surfboard",
-    "tennis racket",
-    "bottle",
-    "wine glass",
-    "cup",
-    "fork",
-    "knife",
-    "spoon",
-    "bowl",
-    "banana",
-    "apple",
-    "sandwich",
-    "orange",
-    "broccoli",
-    "carrot",
-    "hot dog",
-    "pizza",
-    "donut",
-    "cake",
-    "chair",
-    "couch",
-    "potted plant",
-    "bed",
-    "dining table",
-    "toilet",
-    "tv",
-    "laptop",
-    "mouse",
-    "remote",
-    "keyboard",
-    "cell phone",
-    "microwave",
-    "oven",
-    "toaster",
-    "sink",
-    "refrigerator",
-    "book",
-    "clock",
-    "vase",
-    "scissors",
-    "teddy bear",
-    "hair drier",
-    "toothbrush",
-]
+COCO_NAMES = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light', \
+              'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', \
+              'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', \
+              'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard', \
+              'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', \
+              'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed', \
+              'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', \
+              'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush']
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
@@ -178,8 +95,8 @@ DATASET_MAP = {
     "MountainDewCommercial": "dataset/odinw/data/MountainDewCommercial/valid/annotations_without_background.json",
     "selfdrivingCar": "dataset/odinw/data/selfdrivingCar/fixedLarge/export/val_annotations_without_background.json",
     "vector": "dataset/odinw/data/vector/vectorCompleteDataset.v5-v5-(resize-+-grayscale-+-rotate-+-blur-+-bb-optimizations).coco/valid/annotations_without_background.json",
-    "spec_hand": "dataset/odinw/data/EgoHands/specific/valid/annotations_without_background.json",
-}
+    "spec_hand": "dataset/odinw/data/EgoHands/specific/valid/annotations_without_background.json"
+    }
 IMAGE_FOLDER_MAP = {
     "AerialMaritimeDrone": "dataset/odinw/data/AerialMaritimeDrone/large/valid",
     "Aquarium": "dataset/odinw/data/Aquarium/Aquarium Combined.v2-raw-1024.coco/valid",
@@ -208,17 +125,12 @@ IMAGE_FOLDER_MAP = {
     "MountainDewCommercial": "dataset/odinw/data/MountainDewCommercial/valid",
     "selfdrivingCar": "dataset/odinw/data/selfdrivingCar/fixedLarge/export/",
     "vector": "dataset/odinw/data/vector/vectorCompleteDataset.v5-v5-(resize-+-grayscale-+-rotate-+-blur-+-bb-optimizations).coco/valid/",
-    "spec_hand": "dataset/odinw/data/EgoHands/specific/valid",
+    "spec_hand": "dataset/odinw/data/EgoHands/specific/valid"
 }
 
 # HARDCODED PATHS
-DATASET_MAP["coco2017"] = (
-    "/mnt/scratch-artemis/gviveiros/RLVR/data/coco/annotations/instances_val2017.json"
-)
-IMAGE_FOLDER_MAP["coco2017"] = (
-    "/mnt/scratch-artemis/gviveiros/RLVR/data/coco/images/val2017"
-)
-
+DATASET_MAP["coco2017"] = "/mnt/scratch-artemis/gviveiros/RLVR/data/coco/annotations/instances_val2017.json"
+IMAGE_FOLDER_MAP["coco2017"] = "/mnt/scratch-artemis/gviveiros/RLVR/data/coco/images/val2017"
 
 def auto_rank0_print(*args):
     if dist.is_initialized():
@@ -226,7 +138,6 @@ def auto_rank0_print(*args):
             print(f"Rank {dist.get_rank()}: ", *args)
     else:
         print(*args)
-
 
 def xyxy2xywh(bbox):
     # top left and bottom right 2 top left and b
@@ -237,23 +148,12 @@ def xyxy2xywh(bbox):
         y = np.expand_dims(y, axis=0)
     y[:, 0] = x[:, 0]
     y[:, 1] = x[:, 1]
-    y[:, 2] = x[:, 2] - x[:, 0]
-    y[:, 3] = x[:, 3] - x[:, 1]
+    y[:, 2] = (x[:, 2] - x[:, 0])
+    y[:, 3] = (x[:, 3] - x[:, 1])
     return y.tolist()
 
-
-def iou_score(xyxy1, xyxy2):
-    x1, y1, x2, y2 = xyxy1
-    x3, y3, x4, y4 = xyxy2
-    x_inter = max(0, min(x2, x4) - max(x1, x3))
-    y_inter = max(0, min(y2, y4) - max(y1, y3))
-    inter = x_inter * y_inter
-    area1 = (x2 - x1) * (y2 - y1)
-    area2 = (x4 - x3) * (y4 - y3)
-    return inter / (area1 + area2 - inter)
-
-
-def visualization(image_path, pd_bboxes, save_path, box_pattern=0):
+def visualization(image_path, extract_bboxes, save_path, box_pattern=0):
+    # 打开图片
     if isinstance(image_path, str):
         image = Image.open(image_path)
         draw = ImageDraw.Draw(image)
@@ -263,38 +163,34 @@ def visualization(image_path, pd_bboxes, save_path, box_pattern=0):
     height = image.height
     width = image.width
 
-    line_width = int(width * 0.005) if width * 0.005 > 2 else 2
-    font_size = int(height * 0.025) if height * 0.025 > 15 else 15
-    font = ImageFont.truetype(
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size
-    )
+    # 提取线宽和字体大小
+    line_width = int(width * 0.005) if width * 0.005 > 2 else 2  # 确保线宽至少为2像素
+    font_size = int(height * 0.025) if height * 0.025 > 15 else 15  # 确保字体大小至少为15像素
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
 
-    if isinstance(pd_bboxes[0], dict):
-        bboxes = [ex["pd_bbox"] for ex in pd_bboxes]
-        classes = [ex["label"] for ex in pd_bboxes]
+    # 提取框和需要标注的类别
+    if isinstance(extract_bboxes[0], dict):
+        bboxes = [ex["bbox"] for ex in extract_bboxes]
+        classes = [ex["category_name"] for ex in extract_bboxes]
         bboxes = np.asarray(bboxes)
         bboxes[:, ::2] *= width
         bboxes[:, 1::2] *= height
         bboxes = bboxes.tolist()
     else:
-        bboxes = pd_bboxes[0]
+        bboxes = extract_bboxes[0]
         bboxes = np.asarray(bboxes)
         bboxes[:, ::2] *= width
         bboxes[:, 1::2] *= height
         bboxes = bboxes.tolist()
-        classes = len(bboxes) * ["EXP"]
-
+        classes = len(bboxes)*["EXP"]
+    
     # if box_pattern != 0:
     #     if box_pattern == 1:
     #         bboxes = cxcywh2xyxy(bboxes)
 
     for i, bbox in enumerate(bboxes):
         try:
-            color = (
-                random.randint(0, 255),
-                random.randint(0, 255),
-                random.randint(0, 255),
-            )
+            color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
             draw.rectangle(bbox, outline=color, width=line_width)
 
@@ -303,12 +199,8 @@ def visualization(image_path, pd_bboxes, save_path, box_pattern=0):
             left, top, right, bottom = draw.textbbox((bbox[0], bbox[1]), text, font)
             text_w, text_h = right - left, bottom - top
 
-            draw.rectangle(
-                [bbox[0], bbox[1], bbox[0] + text_w, bbox[1] + text_h], fill=color
-            )
-            draw.text(
-                (bbox[0], bbox[1] - line_width), text, fill=(255, 255, 255), font=font
-            )
+            draw.rectangle([bbox[0], bbox[1], bbox[0]+text_w, bbox[1]+text_h], fill=color)
+            draw.text((bbox[0], bbox[1]-line_width), text, fill=(255, 255, 255), font=font)
         except:
             color = random.randint(0, 255)
 
@@ -318,17 +210,14 @@ def visualization(image_path, pd_bboxes, save_path, box_pattern=0):
             # text_w, text_h = draw.textsize(text, font=font)
             left, top, right, bottom = draw.textbbox((bbox[0], bbox[1]), text, font)
             text_w, text_h = right - left, bottom - top
-            draw.rectangle(
-                [bbox[0], bbox[1], bbox[0] + text_w, bbox[1] + text_h], fill=color
-            )
-            draw.text((bbox[0], bbox[1] - line_width), text, fill=255, font=font)
-
+            draw.rectangle([bbox[0], bbox[1], bbox[0]+text_w, bbox[1]+text_h], fill=color)
+            draw.text((bbox[0], bbox[1]-line_width), text, fill=255, font=font)
+    
     try:
         image.save(save_path)
     except:
         print("Error: cannot save the output image.")
         pass
-
 
 def load_image(image_file):
     if image_file.startswith("http") or image_file.startswith("https"):
@@ -338,85 +227,70 @@ def load_image(image_file):
         image = Image.open(image_file).convert("RGB")
     return image
 
-
 def parse_json(json_output):
     # Parsing out the markdown fencing
     lines = json_output.splitlines()
     for i, line in enumerate(lines):
         if line == "```json":
-            json_output = "\n".join(
-                lines[i + 1 :]
-            )  # Remove everything before "```json"
-            json_output = json_output.split("```")[
-                0
-            ]  # Remove everything after the closing "```"
+            json_output = "\n".join(lines[i+1:])  # Remove everything before "```json"
+            json_output = json_output.split("```")[0]  # Remove everything after the closing "```"
             break  # Exit the loop once "```json" is found
     return json_output
 
-
 def parse_rec_output(query, text):
-    cate = query.split("<ref>")[-1].split("</ref>")[0]
-    PATTERN = re.compile(r"\[*\[(.*?),(.*?),(.*?),(.*?)\]\]*")
+    cate = query.split('<ref>')[-1].split('</ref>')[0]
+    PATTERN = re.compile(r'\[*\[(.*?),(.*?),(.*?),(.*?)\]\]*')
     predict_bbox = re.findall(PATTERN, text)
     try:
-        predict_bbox = (
-            float(predict_bbox[0][0]),
-            float(predict_bbox[0][1]),
-            float(predict_bbox[0][2]),
-            float(predict_bbox[0][3]),
-        )
+        predict_bbox = (float(predict_bbox[0][0]), float(predict_bbox[0][1]), float(predict_bbox[0][2]),
+                        float(predict_bbox[0][3]))
     except:
-        predict_bbox = (0.0, 0.0, 0.0, 0.0)
-    return [{"label": cate, "bbox_2d": predict_bbox}]
-
+        predict_bbox = (0., 0., 0., 0.)
+    return [{'label': cate, 'bbox_2d': predict_bbox}]
 
 def resize_bbox(box, image_w=None, image_h=None):
-    ratio_w = 1.0 / VOCAB_IMAGE_W
-    ratio_h = 1.0 / VOCAB_IMAGE_H
+    ratio_w =  1.0 / VOCAB_IMAGE_W
+    ratio_h =  1.0 / VOCAB_IMAGE_H
 
-    new_box = [box[0] * ratio_w, box[1] * ratio_h, box[2] * ratio_w, box[3] * ratio_h]
+    new_box = [box[0] * ratio_w, box[1] * ratio_h, \
+               box[2] * ratio_w, box[3] * ratio_h]
     return new_box
 
-
 def decode_bbox_from_caption(query, text, img_w, img_h, verbose=False):
-    cate = query.split("What are the locations of")[-1].strip().split("?")[0].strip()
+    cate = query.split('What are the locations of')[-1].strip().split('?')[0].strip()
     entities = []
     boxes = []
-
+    
     start = 0
     in_brackets = False
     entity = ""
     box = ""
-
+    
     for i, char in enumerate(text):
-        if char == "[":
+        if char == '[':
             in_brackets = True
             entity = text[start:i].strip()
             start = i + 1
-        elif char == "]":
+        elif char == ']':
             in_brackets = False
             box = text[start:i].strip()
             start = i + 1
-
+            
             # Convert box string to list of integers
-            box_list = list(map(int, box.split(",")))
+            box_list = list(map(int, box.split(',')))
             resized_box_list = resize_bbox(box_list, img_w, img_h)
             entities.append(entity)
             boxes.append(resized_box_list)
-
+            
             # Skip until the next entity (ignoring periods or other delimiters)
-            while start < len(text) and text[start] not in [".", ",", ";", "!", "?"]:
+            while start < len(text) and text[start] not in ['.', ',', ';', '!', '?']:
                 start += 1
             start += 1  # Skip the delimiter
-    entities = [cate] * len(boxes)
-
+    entities = [cate]*len(boxes)
+        
     return entities, boxes
 
-
-additional_colors = [
-    colorname for (colorname, colorcode) in ImageColor.colormap.items()
-]
-
+additional_colors = [colorname for (colorname, colorcode) in ImageColor.colormap.items()]
 
 def plot_bounding_boxes(im, bounding_boxes, input_width, input_height):
     """
@@ -437,87 +311,85 @@ def plot_bounding_boxes(im, bounding_boxes, input_width, input_height):
 
     # Define a list of colors
     colors = [
-        "red",
-        "green",
-        "blue",
-        "yellow",
-        "orange",
-        "pink",
-        "purple",
-        "brown",
-        "gray",
-        "beige",
-        "turquoise",
-        "cyan",
-        "magenta",
-        "lime",
-        "navy",
-        "maroon",
-        "teal",
-        "olive",
-        "coral",
-        "lavender",
-        "violet",
-        "gold",
-        "silver",
+    'red',
+    'green',
+    'blue',
+    'yellow',
+    'orange',
+    'pink',
+    'purple',
+    'brown',
+    'gray',
+    'beige',
+    'turquoise',
+    'cyan',
+    'magenta',
+    'lime',
+    'navy',
+    'maroon',
+    'teal',
+    'olive',
+    'coral',
+    'lavender',
+    'violet',
+    'gold',
+    'silver',
     ] + additional_colors
 
     # Parsing out the markdown fencing
     bounding_boxes = parse_json(bounding_boxes)
 
-    # font = ImageFont.truetype("NotoSansCJK-Regular.ttc", size=14)
+    #font = ImageFont.truetype("NotoSansCJK-Regular.ttc", size=14)
 
     try:
-        json_output = ast.literal_eval(bounding_boxes)
+      json_output = ast.literal_eval(bounding_boxes)
     except Exception as e:
-        end_idx = bounding_boxes.rfind('"}') + len('"}')
-        truncated_text = bounding_boxes[:end_idx] + "]"
-        json_output = ast.literal_eval(truncated_text)
+      end_idx = bounding_boxes.rfind('"}') + len('"}')
+      truncated_text = bounding_boxes[:end_idx] + "]"
+      json_output = ast.literal_eval(truncated_text)
 
     # Iterate over the bounding boxes
     for i, bounding_box in enumerate(json_output):
-        # Select a color from the list
-        color = colors[i % len(colors)]
+      # Select a color from the list
+      color = colors[i % len(colors)]
 
-        # Convert normalized coordinates to absolute coordinates
-        abs_y1 = int(bounding_box["bbox_2d"][1] / input_height * height)
-        abs_x1 = int(bounding_box["bbox_2d"][0] / input_width * width)
-        abs_y2 = int(bounding_box["bbox_2d"][3] / input_height * height)
-        abs_x2 = int(bounding_box["bbox_2d"][2] / input_width * width)
+      # Convert normalized coordinates to absolute coordinates
+      abs_y1 = int(bounding_box["bbox_2d"][1]/input_height * height)
+      abs_x1 = int(bounding_box["bbox_2d"][0]/input_width * width)
+      abs_y2 = int(bounding_box["bbox_2d"][3]/input_height * height)
+      abs_x2 = int(bounding_box["bbox_2d"][2]/input_width * width)
 
-        if abs_x1 > abs_x2:
-            abs_x1, abs_x2 = abs_x2, abs_x1
+      if abs_x1 > abs_x2:
+        abs_x1, abs_x2 = abs_x2, abs_x1
 
-        if abs_y1 > abs_y2:
-            abs_y1, abs_y2 = abs_y2, abs_y1
-        print((abs_x1, abs_y1), (abs_x2, abs_y2))
+      if abs_y1 > abs_y2:
+        abs_y1, abs_y2 = abs_y2, abs_y1
+      print((abs_x1, abs_y1), (abs_x2, abs_y2))
 
-        # Draw the bounding box
-        draw.rectangle(((abs_x1, abs_y1), (abs_x2, abs_y2)), outline=color, width=4)
+      # Draw the bounding box
+      draw.rectangle(
+          ((abs_x1, abs_y1), (abs_x2, abs_y2)), outline=color, width=4
+      )
 
-        # Draw the text
-        if "label" in bounding_box:
-            draw.text((abs_x1 + 8, abs_y1 + 6), bounding_box["label"], fill=color)
+      # Draw the text
+      if "label" in bounding_box:
+        draw.text((abs_x1 + 8, abs_y1 + 6), bounding_box["label"], fill=color)
 
     # Display the image
     img.save("./test_qwen.jpg")
 
-
 def build_transform(input_size):
     MEAN, STD = IMAGENET_MEAN, IMAGENET_STD
-    transform = T.Compose(
-        [
-            T.Lambda(lambda img: img.convert("RGB") if img.mode != "RGB" else img),
-            T.Resize((input_size, input_size), interpolation=InterpolationMode.BICUBIC),
-            T.ToTensor(),
-            T.Normalize(mean=MEAN, std=STD),
-        ]
-    )
+    transform = T.Compose([
+        T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+        T.Resize((input_size, input_size), interpolation=InterpolationMode.BICUBIC),
+        T.ToTensor(),
+        T.Normalize(mean=MEAN, std=STD)
+    ])
     return transform
 
-
 def find_closest_aspect_ratio(aspect_ratio, target_ratios, width, height, image_size):
-    best_ratio_diff = float("inf")
+    best_ratio_diff = float('inf')
     best_ratio = (1, 1)
     area = width * height
     for ratio in target_ratios:
@@ -531,27 +403,19 @@ def find_closest_aspect_ratio(aspect_ratio, target_ratios, width, height, image_
                 best_ratio = ratio
     return best_ratio
 
-
-def dynamic_preprocess(
-    image, min_num=1, max_num=12, image_size=448, use_thumbnail=False
-):
+def dynamic_preprocess(image, min_num=1, max_num=12, image_size=448, use_thumbnail=False):
     orig_width, orig_height = image.size
     aspect_ratio = orig_width / orig_height
 
     # calculate the existing image aspect ratio
     target_ratios = set(
-        (i, j)
-        for n in range(min_num, max_num + 1)
-        for i in range(1, n + 1)
-        for j in range(1, n + 1)
-        if i * j <= max_num and i * j >= min_num
-    )
+        (i, j) for n in range(min_num, max_num + 1) for i in range(1, n + 1) for j in range(1, n + 1) if
+        i * j <= max_num and i * j >= min_num)
     target_ratios = sorted(target_ratios, key=lambda x: x[0] * x[1])
 
     # find the closest aspect ratio to the target
     target_aspect_ratio = find_closest_aspect_ratio(
-        aspect_ratio, target_ratios, orig_width, orig_height, image_size
-    )
+        aspect_ratio, target_ratios, orig_width, orig_height, image_size)
 
     # calculate the target width and height
     target_width = image_size * target_aspect_ratio[0]
@@ -566,7 +430,7 @@ def dynamic_preprocess(
             (i % (target_width // image_size)) * image_size,
             (i // (target_width // image_size)) * image_size,
             ((i % (target_width // image_size)) + 1) * image_size,
-            ((i // (target_width // image_size)) + 1) * image_size,
+            ((i // (target_width // image_size)) + 1) * image_size
         )
         # split the image
         split_img = resized_img.crop(box)
@@ -577,77 +441,68 @@ def dynamic_preprocess(
         processed_images.append(thumbnail_img)
     return processed_images
 
-
 class EVALDataset(Dataset):
-    def __init__(
-        self, data_path: str, prompt: str, image_folder: str, debug: bool = False
-    ):
+    def __init__(self, data_path: str, prompt: str, image_folder: str, debug: bool = False):
         super(EVALDataset, self).__init__()
         f = open(data_path, "r", encoding="utf-8")
         whole_annotations = json.load(f)
         dict_images = whole_annotations["images"]
-        catid2name = {
-            cate["id"]: cate["name"] for cate in whole_annotations["categories"]
-        }
+        catid2name = {cate["id"]: cate["name"] for cate in whole_annotations["categories"]}
         self.list_data_dict = dict_images
         if len(catid2name.values()) > 1:
             if len(catid2name.values()) >= 80:
                 input_cate = catid2name.values()
             else:
                 diff = list(set(COCO_NAMES) - set(catid2name.values()))
-                input_cate = (
-                    list(catid2name.values()) + diff[: (80 - len(catid2name.values()))]
-                )
+                input_cate = list(catid2name.values()) + diff[:(80-len(catid2name.values()))]
             self.prompt = prompt.replace("<category set>", ", ".join(input_cate))
         else:
-            self.prompt = "Can you point out {} in the image and provide the coordinates of its location?".format(
-                list(catid2name.values())[0].split("-")[-1]
-            )
+            self.prompt = "Can you point out {} in the image and provide the coordinates of its location?".format(list(catid2name.values())[0].split("-")[-1])
         # self.prompt = prompt
         self.image_folder = image_folder
         self.debug = debug
+        print(f"Dataset length: {len(self.list_data_dict)}")
 
     def __len__(self):
         if self.debug:
-            return 1
+            return 6
         return len(self.list_data_dict)
 
     def get_item(self, index):
         """
-        return {
-            "image_path":
-            "height":
-            "width":
-        }
+            return {
+                "image_path":
+                "height":
+                "width":
+            }
         """
-        source = self.list_data_dict[index]  # an item in coco style image
+        source = self.list_data_dict[index] # an item in coco style image
         img_path = source["file_name"]
         img_id = source["id"]
         width = source["width"]
         height = source["height"]
         ret = {
             "image_path": img_path,
-            "query": self.prompt,
+            "query": self.prompt, 
             "height": height,
             "width": width,
             "image_id": img_id,
         }
         return ret
-
+    
     def __getitem__(self, index):
         source = self.get_item(index)
         image_path = os.path.join(self.image_folder, source["image_path"])
         ret = {
             # "msg": messages,
-            "query": source["query"],
+            "query": source['query'],
             "height": source["height"],
             "width": source["width"],
-            "image_name": source["image_path"],
+            "image_name": source['image_path'],
             "image_path": image_path,
             "image_id": source["image_id"],
         }
         return ret
-
 
 class SINGLEEVALDataset(Dataset):
     def __init__(self, data_path: str, prompt: str, image_folder: str):
@@ -655,37 +510,32 @@ class SINGLEEVALDataset(Dataset):
         f = open(data_path, "r", encoding="utf-8")
         whole_annotations = json.load(f)
         dict_images = whole_annotations["images"]
-        catid2name = {
-            cate["id"]: cate["name"] for cate in whole_annotations["categories"]
-        }
-        self.list_data_dict = [
-            (image_info, cate)
-            for image_info in dict_images
-            for cate in catid2name.values()
-        ]
+        catid2name = {cate["id"]: cate["name"] for cate in whole_annotations["categories"]}
+        self.list_data_dict = [(image_info, cate) for image_info in dict_images for cate in catid2name.values()]
         self.prompt = prompt
         self.image_folder = image_folder
+        print(f"Dataset length: {len(self.list_data_dict)}")
 
     def __len__(self):
         return len(self.list_data_dict)
 
     def get_item(self, index):
         """
-        return {
-            "image_path":
-            "height":
-            "width":
-        }
+            return {
+                "image_path":
+                "height":
+                "width":
+            }
         """
-        source, cate = self.list_data_dict[index]  # an item in coco style image
+        source, cate = self.list_data_dict[index] # an item in coco style image
         img_path = source["file_name"]
         img_id = source["id"]
         width = source["width"]
         height = source["height"]
-
+        
         ret = {
             "image_path": img_path,
-            "query": self.prompt.replace("<category set>", cate),
+            "query": self.prompt.replace("<category set>", cate), 
             "height": height,
             "width": width,
             "image_id": img_id,
@@ -693,20 +543,19 @@ class SINGLEEVALDataset(Dataset):
         if index == 0:
             print(ret["query"])
         return ret
-
+    
     def __getitem__(self, index):
         source = self.get_item(index)
         image_path = os.path.join(self.image_folder, source["image_path"])
         ret = {
             # "msg": messages,
-            "query": source["query"],
+            "query": source['query'],
             "height": source["height"],
             "width": source["width"],
             "image_path": image_path,
             "image_id": source["image_id"],
         }
         return ret
-
 
 class SINGLE_POS_EVALDataset(Dataset):
     def __init__(self, data_path: str, prompt: str, image_folder: str):
@@ -718,44 +567,41 @@ class SINGLE_POS_EVALDataset(Dataset):
         f = open(data_path, "r", encoding="utf-8")
         whole_annotations = json.load(f)
         dict_images = whole_annotations["images"]
-        catid2name = {
-            cate["id"]: cate["name"] for cate in whole_annotations["categories"]
-        }
+        catid2name = {cate["id"]: cate["name"] for cate in whole_annotations["categories"]}
         image_cate_list = []
         for image_info in dict_images:
-            image_id = image_info["id"]
+            image_id = image_info['id']
             annotation_ids = coco.getAnnIds(imgIds=image_id)
             annotations = coco.loadAnns(annotation_ids)
-            category_ids = set([ann["category_id"] for ann in annotations])
-            image_category_names = [
-                cat["name"] for cat in categories if cat["id"] in category_ids
-            ]
+            category_ids = set([ann['category_id'] for ann in annotations])
+            image_category_names = [cat['name'] for cat in categories if cat['id'] in category_ids]
             for cat_name in image_category_names:
                 image_cate_list.append((image_info, cat_name))
         self.list_data_dict = image_cate_list
         self.prompt = prompt
         self.image_folder = image_folder
+        
 
     def __len__(self):
         return len(self.list_data_dict)
 
     def get_item(self, index):
         """
-        return {
-            "image_path":
-            "height":
-            "width":
-        }
+            return {
+                "image_path":
+                "height":
+                "width":
+            }
         """
-        source, cate = self.list_data_dict[index]  # an item in coco style image
+        source, cate = self.list_data_dict[index] # an item in coco style image
         img_path = source["file_name"]
         img_id = source["id"]
         width = source["width"]
         height = source["height"]
-
+        
         ret = {
             "image_path": img_path,
-            "query": self.prompt.replace("<category set>", cate),
+            "query": self.prompt.replace("<category set>", cate), 
             "height": height,
             "width": width,
             "image_id": img_id,
@@ -763,20 +609,19 @@ class SINGLE_POS_EVALDataset(Dataset):
         if index == 0:
             print(ret["query"])
         return ret
-
+    
     def __getitem__(self, index):
         source = self.get_item(index)
         image_path = os.path.join(self.image_folder, source["image_path"])
         ret = {
-            "query": source["query"],
+            "query": source['query'],
             "height": source["height"],
             "width": source["width"],
-            "image_name": source["image_path"],
+            "image_name": source['image_path'],
             "image_path": image_path,
             "image_id": source["image_id"],
         }
         return ret
-
 
 class InferenceSampler(torch.utils.data.sampler.Sampler):
 
@@ -785,9 +630,8 @@ class InferenceSampler(torch.utils.data.sampler.Sampler):
         assert size > 0
         self._rank = torch.distributed.get_rank()
         self._world_size = torch.distributed.get_world_size()
-        self._local_indices = self._get_local_indices(
-            size, self._world_size, self._rank
-        )
+        self._local_indices = self._get_local_indices(size, self._world_size,
+                                                      self._rank)
 
     @staticmethod
     def _get_local_indices(total_size, world_size, rank):
@@ -796,7 +640,7 @@ class InferenceSampler(torch.utils.data.sampler.Sampler):
         shard_sizes = [shard_size + int(r < left) for r in range(world_size)]
 
         begin = sum(shard_sizes[:rank])
-        end = min(sum(shard_sizes[: rank + 1]), total_size)
+        end = min(sum(shard_sizes[:rank + 1]), total_size)
         return range(begin, end)
 
     def __iter__(self):
@@ -805,10 +649,13 @@ class InferenceSampler(torch.utils.data.sampler.Sampler):
     def __len__(self):
         return len(self._local_indices)
 
-
 def collate_fn_qwen(batches, processor):
+    # if torch.distributed.get_rank() == 0 and torch.distributed.is_initialized():
+    #     import pdb; pdb.set_trace()
     # dataloader会将数据自动转为cuda
     msgs = []
+
+    #print(processor)
     for _ in batches:
         msg = [
             {
@@ -840,23 +687,13 @@ def collate_fn_qwen(batches, processor):
     )
 
     for i, _ in enumerate(batches):
-        input_height = inputs["image_grid_thw"][i][1] * 14
-        input_width = inputs["image_grid_thw"][i][2] * 14
-        info = {
-            "height": _["height"],
-            "width": _["width"],
-            "image_id": _["image_id"],
-            "input_height": input_height,
-            "input_width": input_width,
-            "image_name": _["image_name"],
-            "image_path": _["image_path"],
-            "query": _["query"],
-        }
+        input_height = inputs['image_grid_thw'][i][1]*14
+        input_width = inputs['image_grid_thw'][i][2]*14
+        info = {"height": _["height"], "width": _["width"], "image_id": _["image_id"], "input_height": input_height, "input_width": input_width, "image_name": _["image_name"], "image_path": _["image_path"], 'query': _['query']}
         infos.append(info)
 
-    # TODO: Support batch size>1
-    return inputs, infos
 
+    return inputs, infos
 
 def padding_left(input_ids):
     seq_length = torch.tensor([input_id.shape[0] for input_id in input_ids])
@@ -864,22 +701,19 @@ def padding_left(input_ids):
     pad_length = max_length - seq_length
     x = torch.zeros((len(input_ids), max_length), dtype=input_ids[0].dtype)
     for i, input_id in enumerate(input_ids):
-        x[i, pad_length[i] :] = input_id
+        x[i, pad_length[i]:] = input_id
     return x
 
-
-def collate_fn_internvl(
-    batches, tokenizer, dynamic_image_size, use_thumbnail, input_size
-):
+def collate_fn_internvl(batches, tokenizer, dynamic_image_size, use_thumbnail, input_size):
     pixel_values_list = []
     _transform = build_transform(input_size=input_size)
     for _ in batches:
-        image_path = _["image_path"]
-        image = Image.open(image_path).convert("RGB")
+        image_path = _['image_path']
+        image = Image.open(image_path).convert('RGB')
         if dynamic_image_size:
-            images = dynamic_preprocess(
-                image, image_size=input_size, use_thumbnail=use_thumbnail, max_num=6
-            )
+            images = dynamic_preprocess(image, image_size=input_size,
+                                        use_thumbnail=use_thumbnail,
+                                        max_num=6)
         else:
             images = [image]
         pixel_values = [_transform(image) for image in images]
@@ -887,58 +721,34 @@ def collate_fn_internvl(
         pixel_values_list.append(pixel_values)
 
     pixel_values = torch.cat(pixel_values_list, dim=0)
-    texts = [_["query"] for _ in batches]
+    texts = [_['query'] for _ in batches]
     infos = []
     for _ in batches:
-        info = {
-            "height": _["height"],
-            "width": _["width"],
-            "image_id": _["image_id"],
-            "image_name": _["image_name"],
-            "image_path": _["image_path"],
-            "query": _["query"],
-        }
+        info = {"height": _["height"], "width": _["width"], "image_id": _["image_id"], "image_name": _["image_name"], "image_path": _["image_path"], "query": _["query"]}
         infos.append(info)
 
     return pixel_values, texts, infos
-
 
 def collate_fn_ferret(batches, tokenizer, conv_mode, image_processor):
     # dataloader会将数据自动转为cuda
     image_tensors = []
     for _ in batches:
-        image_path = _["image_path"]
+        image_path = _['image_path']
         img = load_image(image_path)
-
-        img_tensor = image_processor.preprocess(
-            img,
-            return_tensors="pt",
-            do_resize=True,
-            do_center_crop=False,
-            size=[336, 336],
-        )["pixel_values"]
+            
+        img_tensor = image_processor.preprocess(img, return_tensors='pt', do_resize=True, 
+                                                    do_center_crop=False, size=[336, 336])['pixel_values']
         image_tensors.append(img_tensor)
 
     input_ids = []
     infos = []
-    for i, _ in enumerate(batches):
+    for i,_ in enumerate(batches):
         conv = conv_templates[conv_mode].copy()
         conv.append_message(conv.roles[0], _["query"])
         conv.append_message(conv.roles[1], None)
         prompt = conv.get_prompt()
-        input_ids.append(
-            tokenizer_image_token(
-                prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt"
-            )
-        )
-        info = {
-            "query": _["query"],
-            "height": _["height"],
-            "width": _["width"],
-            "image_id": _["image_id"],
-            "image_name": _["image_name"],
-            "image_path": _["image_path"],
-        }
+        input_ids.append(tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt'))
+        info = {"query": _["query"], "height": _["height"], "width": _["width"], "image_id": _["image_id"], "image_name": _["image_name"], "image_path":_["image_path"]}
         infos.append(info)
 
     if len(batches) > 1:
@@ -947,20 +757,15 @@ def collate_fn_ferret(batches, tokenizer, conv_mode, image_processor):
     else:
         return input_ids[0].unsqueeze(0), image_tensors[0], infos
 
-
 def collate_fn_griffon(batches, tokenizer, conv_mode, image_processor):
     # dataloader会将数据自动转为cuda
     image_tensors = []
-    _resize = transforms.Resize(
-        (image_processor.size["shortest_edge"], image_processor.size["shortest_edge"])
-    )
+    _resize = transforms.Resize((image_processor.size["shortest_edge"], image_processor.size["shortest_edge"]))
     for _ in batches:
-        image_path = _["image_path"]
+        image_path = _['image_path']
         img = load_image(image_path)
         img = _resize(img)
-        img_tensor = image_processor.preprocess(img, return_tensors="pt")[
-            "pixel_values"
-        ]
+        img_tensor = image_processor.preprocess(img, return_tensors='pt')['pixel_values']
         image_tensors.append(img_tensor)
 
     input_ids = []
@@ -970,19 +775,8 @@ def collate_fn_griffon(batches, tokenizer, conv_mode, image_processor):
         conv.append_message(conv.roles[0], _["query"])
         conv.append_message(conv.roles[1], None)
         prompt = conv.get_prompt()
-        input_ids.append(
-            tokenizer_image_token(
-                prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt"
-            )
-        )
-        info = {
-            "query": _["query"],
-            "height": _["height"],
-            "width": _["width"],
-            "image_id": _["image_id"],
-            "image_name": _["image_name"],
-            "image_path": _["image_path"],
-        }
+        input_ids.append(tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt'))
+        info = {"query": _["query"], "height": _["height"], "width": _["width"], "image_id": _["image_id"], "image_name":_["image_name"], "image_path":_["image_path"]}
         infos.append(info)
 
     if len(batches) > 1:
@@ -994,129 +788,55 @@ def collate_fn_griffon(batches, tokenizer, conv_mode, image_processor):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--model-path", type=str, default="JefferyZhan/Griffon-G-gemma2-9b"
-    )
-    parser.add_argument(
-        "--model-type",
-        type=str,
-        default="griffon",
-        choices=["qwen", "internvl", "ferret", "griffon"],
-        required=True,
-    )
+    parser.add_argument("--model-path", type=str, default="JefferyZhan/Griffon-G-gemma2-9b")
+    parser.add_argument("--model-type", type=str, default="griffon", choices=["qwen", "internvl", "ferret", "griffon"], required=True)
     parser.add_argument("--image-folder", type=str)
-    parser.add_argument("--query", type=str, required=True)
-    parser.add_argument(
-        "--dataset", type=str, help="Path to coco2017 val annotations", required=True
-    )
-    parser.add_argument("--batch-size", type=int, default=1)
-    parser.add_argument("--temperature", type=float, default=0.0)
-    parser.add_argument("--num-workers", type=int, default=1)
-    parser.add_argument("--output-path", type=str, default="./eval_output/detection")
-    parser.add_argument("--init", type=str, default="tcp://127.0.0.1:12457")
-    parser.add_argument(
-        "--single",
-        action="store_true",
-        help="Set for ODINW Evaluation with visual grounding setting",
-    )
-    parser.add_argument(
-        "--pos",
-        action="store_true",
-        help="Set for ODINW Evaluation with postive categories following the Qwen2.5VL Setting",
-    )
-    parser.add_argument(
-        "--max-new-tokens",
-        default=1024,
-        type=int,
-        help="Max new tokens to be generated",
-    )
-    parser.add_argument("--debug", type=bool, default=False, help="Set for debug mode")
+    parser.add_argument("--query", type=str, required=True) 
+    parser.add_argument('--dataset', type=str, help="Path to coco2017 val annotations", required=True)
+    parser.add_argument('--batch-size', type=int, default=1)
+    parser.add_argument('--temperature', type=float, default=0.0)
+    parser.add_argument('--num-workers', type=int, default=1)
+    parser.add_argument('--output-path', type=str, default="./eval_output/detection")
+    parser.add_argument('--init',type=str, default="tcp://127.0.0.1:12457")
+    parser.add_argument("--single", action="store_true", help="Set for ODINW Evaluation with visual grounding setting")
+    parser.add_argument("--pos", action="store_true", help="Set for ODINW Evaluation with postive categories following the Qwen2.5VL Setting")
+    parser.add_argument("--max-new-tokens", default=1024, type=int, help="Max new tokens to be generated")
+    parser.add_argument("--debug", action="store_true", help="Set for debug mode")
+    
     args = parser.parse_args()
 
     # Args
-    print(args)
-
+    print("Args: ", args)
+    
     # Env Init
     torch.distributed.init_process_group(
-        backend="nccl",
-        world_size=int(os.getenv("WORLD_SIZE", "1")),
-        rank=int(os.getenv("RANK", "0")),
+        backend='nccl',
+        world_size=int(os.getenv('WORLD_SIZE', '1')),
+        rank=int(os.getenv('RANK', '0')),
         init_method=str(args.init),
-        timeout=timedelta(minutes=60),
+        timeout = timedelta(minutes=60)
     )
-    torch.cuda.set_device(int(os.getenv("LOCAL_RANK", 0)))
+    torch.cuda.set_device(int(os.getenv('LOCAL_RANK', 0)))
 
-    # Load Model & Model init
+    #Load Model & Model init
     model_path = args.model_path
     conv_mode = "llava_llama_2"
-    # args.model_path = model_path
-    if args.model_type == "qwen":
+    #args.model_path = model_path
+    if args.model_type == 'qwen':
         model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-            model_path,
-            torch_dtype=torch.bfloat16,
-            device_map="auto",
-            attn_implementation="flash_attention_2",
+            model_path, torch_dtype=torch.bfloat16, device_map="auto", attn_implementation="flash_attention_2",
         )
-        processor = AutoProcessor.from_pretrained(
-            model_path, use_fast=True, min_pixels=28 * 28, max_pixels=12800 * 28 * 28
-        )  # padding_side='left'
-    elif args.model_type == "internvl":
-        model = (
-            AutoModel.from_pretrained(
-                args.model_path,
-                torch_dtype=torch.bfloat16,
-                low_cpu_mem_usage=True,
-                use_flash_attn=True,
-                trust_remote_code=True,
-                # assign=True
-            )
-            .eval()
-            .cuda()
-        )
-        tokenizer = AutoTokenizer.from_pretrained(
-            args.model_path, trust_remote_code=True, use_fast=False
-        )
-        input_size = (
-            model.config.force_image_size or model.config.vision_config.image_size
-        )
-        use_thumbnail = model.config.use_thumbnail
-    elif args.model_type == "ferret":
-        conv_mode = "ferret_v1"
-        model_name = get_model_name_from_path(args.model_path)
-        tokenizer, model, image_processor, context_len = load_pretrained_model(
-            args.model_path, None, model_name
-        )
-    elif args.model_type == "griffon":
-        conv_mode = "llava_llama_2"
-        model_name = get_model_name_from_path(args.model_path)
-        tokenizer, model, image_processor, context_len = load_pretrained_model(
-            args.model_path,
-            None,
-            model_name,
-            torch_dtype=torch.bfloat16,
-            device_map="cuda",
-        )
+        processor = AutoProcessor.from_pretrained(model_path,use_fast=True,min_pixels=28*28,max_pixels=12800*28*28) #padding_side='left'
     else:
         raise NotImplementedError
 
     prompt = args.query
-    if args.model_type == "griffon" or args.model_type == "ferret":
-        if model.config.mm_use_im_start_end:
-            prompt = (
-                DEFAULT_IM_START_TOKEN
-                + DEFAULT_IMAGE_TOKEN
-                + DEFAULT_IM_END_TOKEN
-                + "\n"
-                + prompt
-            )
-        else:
-            prompt = DEFAULT_IMAGE_TOKEN + "\n" + prompt
-
+    
     model_out_dir = os.path.join(args.output_path, args.model_path.split("/")[-1])
-
+    
     os.makedirs(model_out_dir, exist_ok=True)
 
-    datasets = {ds: DATASET_MAP[ds] for ds in args.dataset.split(",")}
+    datasets = {ds:DATASET_MAP[ds] for ds in args.dataset.split(",")}
 
     for ds, dataset_name in datasets.items():
         model_data_out_dir = os.path.join(model_out_dir, ds)
@@ -1126,9 +846,7 @@ if __name__ == "__main__":
         os.makedirs(model_data_out_dir, exist_ok=True)
         dataset_path = dataset_name
         whole_annotations = json.load(open(dataset_path, "r"))
-        catname2id = {
-            cate["name"].lower(): cate["id"] for cate in whole_annotations["categories"]
-        }
+        catname2id = {cate["name"].lower():cate["id"] for cate in whole_annotations["categories"]}
         if args.single:
             if args.pos:
                 dataset = SINGLE_POS_EVALDataset(dataset_path, prompt, image_folder)
@@ -1141,63 +859,55 @@ if __name__ == "__main__":
         conv = conv_templates[conv_mode].copy()
         stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
         keywords = [stop_str]
-        import pdb
-
-        pdb.set_trace()
-        if args.model_type == "qwen":
+      
+        if args.model_type == 'qwen':
             dataloader = torch.utils.data.DataLoader(
                 dataset=dataset,
-                sampler=InferenceSampler(len(dataset)),
-                batch_size=args.batch_size,
-                num_workers=args.num_workers,
+                sampler = InferenceSampler(len(dataset)),
+                batch_size = args.batch_size,
+                num_workers = args.num_workers,
                 pin_memory=True,
                 drop_last=False,
-                collate_fn=partial(collate_fn_qwen, processor=processor),
+                collate_fn=partial(collate_fn_qwen, processor=processor)
             )
         else:
             raise NotImplementedError
-
-        if not os.path.exists(os.path.join(model_data_out_dir, "original_pred.pth")):
+        
+        if not os.path.exists(os.path.join(model_data_out_dir,"original_pred.pth")): # HARDCODED TO IGNORE
             eval_outputs = []
             with torch.inference_mode():
-                if args.model_type == "qwen":
+                if args.model_type == 'qwen':
                     for i, (inputs, infos) in tqdm(enumerate(dataloader)):
-                        import pdb
-
-                        pdb.set_trace()
-                        assert args.batch_size == 1
                         inputs = inputs.to(model.device)
+                        
+                        input_text = processor.batch_decode(inputs.input_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+                        
                         generated_ids = model.generate(
                             **inputs,
                             use_cache=True,
                             do_sample=False,
-                            max_new_tokens=512,
+                            max_new_tokens=512
                         )
-
+                        
                         generated_ids_trimmed = [
-                            out_ids[len(in_ids) :]
-                            for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+                            out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
                         ]
                         output_text = processor.batch_decode(
-                            generated_ids_trimmed,
-                            skip_special_tokens=True,
-                            clean_up_tokenization_spaces=False,
+                            generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
                         )
-
+                    
                         for info, output in zip(infos, output_text):
-                            eval_outputs.append(
-                                {
-                                    "output": output,
-                                    "query": info["query"],
-                                    "image_id": info["image_id"],
-                                    "image_name": info["image_name"],
-                                    "image_path": info["image_path"],
-                                    "height": info["height"],
-                                    "input_height": info["input_height"],
-                                    "input_width": info["input_width"],
-                                    "width": info["width"],
-                                }
-                            )
+                            eval_outputs.append({
+                                "output": output,
+                                "query": info['query'],
+                                "image_id": info["image_id"],
+                                "image_name": info["image_name"],
+                                "image_path": info["image_path"],
+                                "height": info["height"],
+                                "input_height": info["input_height"],
+                                "input_width": info["input_width"],
+                                "width": info["width"],
+                            })
                 else:
                     raise NotImplementedError
 
@@ -1205,99 +915,56 @@ if __name__ == "__main__":
                 world_size = torch.distributed.get_world_size()
                 merged_outputs = [None for _ in range(world_size)]
                 torch.distributed.all_gather_object(merged_outputs, eval_outputs)
-                merged_outputs = [
-                    _ for _ in itertools.chain.from_iterable(merged_outputs)
-                ]
-
+                merged_outputs = [_ for _ in itertools.chain.from_iterable(merged_outputs)]
                 if torch.distributed.get_rank() == 0:
-                    torch.save(
-                        merged_outputs,
-                        os.path.join(model_data_out_dir, "original_pred.pth"),
-                    )
+                    torch.save(merged_outputs, os.path.join(model_data_out_dir,"original_pred.pth"))
                     print(f"Begin to eval {ds}")
                     print("Begin to eval")
 
                     eval_list = []
-                    if args.model_type == "qwen":
+                    # import pdb; pdb.set_trace()
+                    if args.model_type == 'qwen':
                         for j, output in tqdm(enumerate(merged_outputs)):
                             try:
                                 bbox = output["output"]
                                 extracted = parse_json(bbox)
-
-                                try:
-                                    extracted = ast.literal_eval(extracted)
-                                except Exception as e:
-                                    end_idx = extracted.rfind('"}') + len('"}')
-                                    truncated_text = extracted[:end_idx] + "]"
+                                
+                                try:                                                                                                                                                                         
+                                    extracted = ast.literal_eval(extracted)                                                                                                                                                           
+                                except Exception as e:                                                                                           
+                                    end_idx = extracted.rfind('"}') + len('"}')                                                                                                                                           
+                                    truncated_text = extracted[:end_idx] + "]"                                               
                                     extracted = ast.literal_eval(truncated_text)
                                 for idx, item in enumerate(extracted):
-                                    import pdb
-
-                                    pdb.set_trace()
+                                    #import pdb; pdb.set_trace()
                                     try:
-                                        predict_bbox = torch.tensor(
-                                            xyxy2xywh(item["bbox_2d"]),
-                                            dtype=torch.float32,
-                                        ).view(-1, 4)
-                                        predict_bbox[:, ::2] = (
-                                            predict_bbox[:, ::2]
-                                            / output["input_width"]
-                                            * output["width"]
-                                        )
-                                        predict_bbox[:, 1::2] = (
-                                            predict_bbox[:, 1::2]
-                                            / output["input_height"]
-                                            * output["height"]
-                                        )
+                                        predict_bbox = torch.tensor(xyxy2xywh(item["bbox_2d"]), dtype=torch.float32).view(-1, 4)
+                                        predict_bbox[:, ::2] = predict_bbox[:, ::2] / output["input_width"] * output["width"]
+                                        predict_bbox[:, 1::2] = predict_bbox[:, 1::2] / output["input_height"] * output["height"]
 
                                         predict_id = catname2id[item["label"].lower()]
-                                        import pdb
-
-                                        pdb.set_trace()
                                         ret = {
                                             "image_id": output["image_id"],
                                             "category_id": predict_id,
-                                            "pd_bbox": predict_bbox.tolist()[0],
-                                            "gt_bbox": item["bbox_2d"],
-                                            "score": iou_score(
-                                                predict_bbox, item["bbox_2d"]
-                                            ),
+                                            "bbox": predict_bbox.tolist()[0],
+                                            "score": 0.99,
                                         }
                                         eval_list.append(ret)
                                     except:
                                         continue
-                                visual_save_path = os.path.join(
-                                    model_data_out_dir,
-                                    "detection/{}_{}".format(
-                                        j, output["image_name"].split("/")[-1]
-                                    ),
-                                )
+                                visual_save_path = os.path.join(model_data_out_dir, "detection/{}_{}".format(j,output["image_name"].split("/")[-1]))
                                 visual_save_dir = os.path.dirname(visual_save_path)
                                 if not os.path.isdir(visual_save_dir):
                                     os.makedirs(visual_save_dir)
                                 try:
                                     _extracted = []
                                     for extract_item in extracted:
-                                        ori_bbox = extract_item["bbox_2d"]
-                                        resized_bbox = [
-                                            ori_bbox[0] / output["input_width"],
-                                            ori_bbox[1] / output["input_height"],
-                                            ori_bbox[2] / output["input_width"],
-                                            ori_bbox[3] / output["input_height"],
-                                        ]
-                                        _extract_item = {
-                                            "category_name": extract_item["label"],
-                                            "bbox": resized_bbox,
-                                        }
+                                        ori_bbox = extract_item['bbox_2d']
+                                        resized_bbox = [ori_bbox[0]/output["input_width"], ori_bbox[1]/output["input_height"], ori_bbox[2]/output["input_width"], ori_bbox[3]/output["input_height"]]
+                                        _extract_item  = {'category_name': extract_item['label'], 'bbox': resized_bbox}
                                         _extracted.append(_extract_item)
-
-                                    visualization(
-                                        os.path.join(
-                                            image_folder, output["image_name"]
-                                        ),
-                                        _extracted,
-                                        visual_save_path,
-                                    )
+                                
+                                    visualization(os.path.join(image_folder, output["image_name"]), _extracted, visual_save_path)
                                 except Exception as e:
                                     print(e)
                                     print(output["query"])
@@ -1311,9 +978,7 @@ if __name__ == "__main__":
                                 continue
                     else:
                         raise NotImplementedError
-                    save_path = os.path.join(
-                        model_data_out_dir, "{}_eval_processed.json".format(ds)
-                    )
+                    save_path = os.path.join(model_data_out_dir, "{}_eval_processed.json".format(ds))
                     save_file = open(save_path, "w")
                     json.dump(eval_list, save_file)
                     save_file.close()
@@ -1327,9 +992,7 @@ if __name__ == "__main__":
         else:
             if torch.distributed.get_rank() == 0:
                 # import pdb; pdb.set_trace()
-                merged_outputs = torch.load(
-                    os.path.join(model_data_out_dir, "original_pred.pth")
-                )
+                merged_outputs = torch.load(os.path.join(model_data_out_dir,"original_pred.pth"))
                 print(f"Begin to eval {ds}")
                 print("Begin to eval")
 
@@ -1338,73 +1001,43 @@ if __name__ == "__main__":
                     try:
                         bbox = output["output"]
                         extracted = parse_json(bbox)
-
-                        try:
-                            extracted = ast.literal_eval(extracted)
-                        except Exception as e:
-                            end_idx = extracted.rfind('"}') + len('"}')
-                            truncated_text = extracted[:end_idx] + "]"
+                        
+                        try:                                                                                                                                                                         
+                            extracted = ast.literal_eval(extracted)                                                                                                                                                           
+                        except Exception as e:                                                                                           
+                            end_idx = extracted.rfind('"}') + len('"}')                                                                                                                                           
+                            truncated_text = extracted[:end_idx] + "]"                                               
                             extracted = ast.literal_eval(truncated_text)
                         for idx, item in enumerate(extracted):
-                            import pdb
-
-                            pdb.set_trace()
+                            #import pdb; pdb.set_trace()
                             try:
-                                predict_bbox = torch.tensor(
-                                    xyxy2xywh(item["bbox_2d"]), dtype=torch.float32
-                                ).view(-1, 4)
-                                predict_bbox[:, ::2] = (
-                                    predict_bbox[:, ::2]
-                                    / output["input_width"]
-                                    * output["width"]
-                                )
-                                predict_bbox[:, 1::2] = (
-                                    predict_bbox[:, 1::2]
-                                    / output["input_height"]
-                                    * output["height"]
-                                )
+                                predict_bbox = torch.tensor(xyxy2xywh(item["bbox_2d"]), dtype=torch.float32).view(-1, 4)
+                                predict_bbox[:, ::2] = predict_bbox[:, ::2] / output["input_width"] * output["width"]
+                                predict_bbox[:, 1::2] = predict_bbox[:, 1::2] / output["input_height"] * output["height"]
 
                                 predict_id = catname2id[item["label"].lower()]
                                 ret = {
                                     "image_id": output["image_id"],
                                     "category_id": predict_id,
-                                    "pd_bbox": predict_bbox.tolist()[0],
-                                    "gt_bbox": item["bbox_2d"],
+                                    "bbox": predict_bbox.tolist()[0],
                                     "score": 0.99,
                                 }
                                 eval_list.append(ret)
                             except:
                                 continue
-                        visual_save_path = os.path.join(
-                            model_data_out_dir,
-                            "detection/{}_{}".format(
-                                j, output["image_name"].split("/")[-1]
-                            ),
-                        )
+                        visual_save_path = os.path.join(model_data_out_dir, "detection/{}_{}".format(j,output["image_name"].split("/")[-1]))
                         visual_save_dir = os.path.dirname(visual_save_path)
                         if not os.path.isdir(visual_save_dir):
                             os.makedirs(visual_save_dir)
                         try:
                             _extracted = []
                             for extract_item in extracted:
-                                ori_bbox = extract_item["bbox_2d"]
-                                resized_bbox = [
-                                    ori_bbox[0] / output["input_width"],
-                                    ori_bbox[1] / output["input_height"],
-                                    ori_bbox[2] / output["input_width"],
-                                    ori_bbox[3] / output["input_height"],
-                                ]
-                                _extract_item = {
-                                    "category_name": extract_item["label"],
-                                    "bbox": resized_bbox,
-                                }
+                                ori_bbox = extract_item['bbox_2d']
+                                resized_bbox = [ori_bbox[0]/output["input_width"], ori_bbox[1]/output["input_height"], ori_bbox[2]/output["input_width"], ori_bbox[3]/output["input_height"]]
+                                _extract_item  = {'category_name': extract_item['label'], 'bbox': resized_bbox}
                                 _extracted.append(_extract_item)
-
-                            visualization(
-                                os.path.join(image_folder, output["image_name"]),
-                                _extracted,
-                                visual_save_path,
-                            )
+                        
+                            visualization(os.path.join(image_folder,output["image_name"]), _extracted, visual_save_path)
                         except Exception as e:
                             print(e)
                             print(output["query"])
@@ -1416,9 +1049,7 @@ if __name__ == "__main__":
                         print(output["output"])
                         print(extracted)
                         continue
-                save_path = os.path.join(
-                    model_data_out_dir, "{}_eval_processed.json".format(ds)
-                )
+                save_path = os.path.join(model_data_out_dir, "{}_eval_processed.json".format(ds))
                 save_file = open(save_path, "w")
                 json.dump(eval_list, save_file)
                 save_file.close()

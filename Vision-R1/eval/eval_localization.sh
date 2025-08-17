@@ -1,3 +1,11 @@
+#!/bin/bash
+
+# Enable conda in this shell
+eval "$(conda shell.bash hook)"
+
+# Activate environment
+conda activate vision-r1
+
 # Evaluation Prompt for Different Models and Tasks 
 # Qwen2.5_VL
 ## COCO
@@ -22,19 +30,22 @@
 # When evaluating the ODINW, the single and pos are required to be added to reproduce the results.
 # While for COCO evaluation, they should be removed to be false.
 ###############################################################################################
+cd /mnt/home/gviveiros/RLVR/Vision-R1
+
+model_path="checkpoints/Qwen2.5-VL-3B-Instruct-Vision-R1"
+#model_path="Qwen/Qwen2.5-VL-3B-Instruct"
 
 torchrun --nproc_per_node 1 \
         --nnodes 1 \
         --node_rank 0 \
         --master_addr 127.0.0.1 \
-        --master_port 12355 \
+        --master_port 12356 \
         eval/eval_localization.py \
-        --model-path checkpoints/Qwen2.5-VL-3B-Instruct-Vision-R1 \
+        --model-path ${model_path} \
         --model-type qwen \
-        --init tcp://127.0.0.1:12355 \
+        --init tcp://127.0.0.1:12356 \
         --query "Examine the image for any objects from the category set. Report the coordinates of each detected object. The category set includes <category set>." \
         --batch-size 1 \
         --dataset ${1} \
-        --debug True
         # --single \
         # --pos \
